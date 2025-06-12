@@ -2,7 +2,7 @@ import React from 'react';
 import { Box, Typography, Button } from '@mui/material';
 import Footer from '../components/Footer';
 
-const Methodology = (): JSX.Element => {
+const Methodology: React.FC = () => {
   return (
     <Box display="flex" flexDirection="column" minHeight="100vh">
       <Box
