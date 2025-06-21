@@ -7,10 +7,11 @@ import {
   Button,
   Divider,
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 
 const Header: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
 
   const navItems = [
     { label: 'Home', path: '/' },
@@ -42,33 +43,38 @@ const Header: React.FC = () => {
 
         {/* Navigation */}
         <Box display="flex" alignItems="center">
-          {navItems.map((item, index) => (
-            <Box
-              key={item.path}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-              }}
-            >
-              {index > 0 && (
-                <Divider
-                  orientation="vertical"
-                  flexItem
-                  sx={{ mx: 1, borderColor: '#ccc' }}
-                />
-              )}
-              <Button
-                onClick={() => navigate(item.path)}
+          {navItems.map((item, index) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Box
+                key={item.path}
                 sx={{
-                  color: '#333',
-                  textTransform: 'none',
-                  fontWeight: 500,
+                  display: 'flex',
+                  alignItems: 'center',
                 }}
               >
-                {item.label}
-              </Button>
-            </Box>
-          ))}
+                {index > 0 && (
+                  <Divider
+                    orientation="vertical"
+                    flexItem
+                    sx={{ mx: 1, borderColor: '#ccc' }}
+                  />
+                )}
+                <Button
+                  onClick={() => navigate(item.path)}
+                  sx={{
+                    color: isActive ? '#0C134F' : '#333',
+                    textTransform: 'none',
+                    fontWeight: isActive ? 700 : 500,
+                    borderBottom: isActive ? '2px solid #0C134F' : 'none',
+                    borderRadius: 0,
+                  }}
+                >
+                  {item.label}
+                </Button>
+              </Box>
+            );
+          })}
         </Box>
       </Toolbar>
     </AppBar>
