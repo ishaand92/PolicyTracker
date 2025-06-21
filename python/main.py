@@ -1,0 +1,1 @@
+#pip install cpdb-api==<version e.g. 1.0.8>
