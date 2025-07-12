@@ -17,33 +17,39 @@ type Policy = {
   id: number;
   title: string;
   description: string;
+  date: string;
+  sector: string;
   category: string;
 };
 
-const mockPolicies: Policy[] = [
-  { id: 1, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
-  { id: 2, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
-  { id: 3, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
-  { id: 4, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
-  { id: 5, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
-  { id: 6, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
-  { id: 7, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
-  { id: 8, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
-  { id: 9, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
-  { id: 10, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
-  { id: 11, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
-  { id: 12, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
-  { id: 13, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
-  { id: 14, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
-  { id: 15, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
-  { id: 16, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
+// const mockPolicies: Policy[] = [
+//   { id: 1, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
+//   { id: 2, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
+//   { id: 3, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
+//   { id: 4, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
+//   { id: 5, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
+//   { id: 6, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
+//   { id: 7, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
+//   { id: 8, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
+//   { id: 9, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
+//   { id: 10, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
+//   { id: 11, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
+//   { id: 12, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
+//   { id: 13, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
+//   { id: 14, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
+//   { id: 15, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
+//   { id: 16, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
+//];
+
+const policies: Policy[] = [
+
 ];
 
 const PolicyList: React.FC = () => {
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
 
-  const filteredPolicies = mockPolicies.filter(
+  const filteredPolicies = policies.filter(
     (policy) =>
       policy.title.toLowerCase().includes(search.toLowerCase()) &&
       (category === '' || policy.category === category)
