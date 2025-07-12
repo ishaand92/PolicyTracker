@@ -7,7 +7,7 @@ const Home: React.FC = () => {
       sx={{
         height: 'calc(100vh - 64px - 53px)',
         overflowY: 'auto',
-        background: 'linear-gradient(135deg, #dbeecd, #f5f5f5)',
+        background: 'linear-gradient(135deg,rgb(244, 248, 241),rgb(248, 243, 243))',
       }}
     >
       {/* Hero Section */}
