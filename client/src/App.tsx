@@ -15,6 +15,11 @@ const App: React.FC = () => {
       {/* Reset default margins/paddings */}
       <CssBaseline />
 
+    <Routes>
+      <Route path="/home" element={<Home />} />
+      {/* Other routes if needed */}
+    </Routes>
+    
       {/* App layout container */}
       <Box
         sx={{

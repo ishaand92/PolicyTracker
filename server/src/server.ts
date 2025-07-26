@@ -21,6 +21,9 @@ app.use(bodyParser.json());
 // Serve static files like policy_list.json if needed
 app.use(express.static(path.join(__dirname, '../public')));
 
+// Serve React frontend static assets
+app.use(express.static(path.join(__dirname, '../../client/build')));
+
 // Connect to MongoDB
 connectDB()
   .then(() => {
@@ -36,10 +39,6 @@ connectDB()
     process.exit(1);
   });
 
-// ROOT Route
-app.get('/home', (req: Request, res: Response) => {
-  res.send('Welcome to the AI Model API');
-});
 
 // Example model API route
 app.post('/api/model', async (req: Request, res: Response) => {
@@ -53,5 +52,15 @@ app.post('/api/model', async (req: Request, res: Response) => {
   }
 });
 
+// Serve React frontend index.html for /home
+app.get('/home', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../client/build/index.html'));
+});
+
 // Climate Policy API route
 app.use('/api/policies', policyRoutes);
+
+// Catch-all route to serve React index.html for all other frontend routes
+app.get('*', (req: Request, res: Response) => {
+  res.sendFile(path.join(__dirname, '../../client/build/index.html'));
+});

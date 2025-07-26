@@ -42,7 +42,7 @@ type Policy = {
 //];
 
 const policies: Policy[] = [
-
+  
 ];
 
 const PolicyList: React.FC = () => {
