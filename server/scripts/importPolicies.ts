@@ -1,13 +1,8 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import PolicyModel from '../src/models/PolicyModel'; // adjust the path if needed
-import csvParser from 'csv-parser'; // only needed for CSV support
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+import PolicyModel from '../src/models/PolicyModel';
+import csvParser from 'csv-parser';
 
 const MONGO_URI = "mongodb+srv://deshpandeishaan22:PolicyTrackerPass12@policytracker.suvsa.mongodb.net/?retryWrites=true&w=majority&appName=PolicyTracker";
 
