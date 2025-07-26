@@ -26,3 +26,4 @@ export interface Policy {
     impact_indicators: string;
     last_update: string;
   }
+  
