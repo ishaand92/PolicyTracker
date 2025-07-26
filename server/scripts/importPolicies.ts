@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import Policy from '../src/models/Policy'; // adjust the path if needed
+import PolicyModel from '../src/models/PolicyModel'; // adjust the path if needed
 import csvParser from 'csv-parser'; // only needed for CSV support
 import { fileURLToPath } from 'url';
 import { dirname } from 'path';
@@ -15,8 +15,8 @@ async function importFromJSON() {
   const jsonPath = path.join(__dirname, 'policies.json');
   const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
 
-  await Policy.deleteMany({}); // optional: clear existing data
-  await Policy.insertMany(data);
+  await PolicyModel.deleteMany({}); // optional: clear existing data
+  await PolicyModel.insertMany(data);
   console.log(`Inserted ${data.length} policies from JSON.`);
 }
 
@@ -31,8 +31,8 @@ async function importFromCSV() {
         policies.push(row);
       })
       .on('end', async () => {
-        await Policy.deleteMany({});
-        await Policy.insertMany(policies);
+        await PolicyModel.deleteMany({});
+        await PolicyModel.insertMany(policies);
         console.log(`Inserted ${policies.length} policies from CSV.`);
         resolve();
       })
