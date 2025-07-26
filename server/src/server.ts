@@ -4,8 +4,6 @@ import bodyParser from 'body-parser';
 import dotenv from 'dotenv';
 import path from 'path';
 import { connectDB } from './db/db';
-
-// Routes
 import policyRoutes from './routes/policyRoute';
 
 // Load environment variables
@@ -13,12 +11,11 @@ dotenv.config({ path: './.env' });
 
 // Create Express app
 const app = express();
+const PORT = process.env.PORT || 5000;
 
-// Middleware
+// --- Middleware ---
 app.use(cors());
 app.use(bodyParser.json());
-
-// Serve static files like policy_list.json if needed
 app.use(express.static(path.join(__dirname, '../public')));
 
 // Serve React frontend static assets
@@ -40,7 +37,6 @@ connectDB()
   });
 
 
-// Example model API route
 app.post('/api/model', async (req: Request, res: Response) => {
   try {
     const inputData = req.body;
