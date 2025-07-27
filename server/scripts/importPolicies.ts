@@ -1,19 +1,14 @@
-import mongoose from 'mongoose';
-import fs from 'fs';
+import dotenv from 'dotenv';
 import path from 'path';
-import PolicyModel from '../src/models/PolicyModel';
+
+// ⬇️ Load env manually from root
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
+
+import fs from 'fs';
 import csvParser from 'csv-parser';
-
-const MONGO_URI = "mongodb+srv://deshpandeishaan22:PolicyTrackerPass12@policytracker.suvsa.mongodb.net/?retryWrites=true&w=majority&appName=PolicyTracker";
-
-async function importFromJSON() {
-  const jsonPath = path.join(__dirname, 'policies.json');
-  const data = JSON.parse(fs.readFileSync(jsonPath, 'utf-8'));
-
-  await PolicyModel.deleteMany({}); // optional: clear existing data
-  await PolicyModel.insertMany(data);
-  console.log(`Inserted ${data.length} policies from JSON.`);
-}
+import mongoose from 'mongoose';
+import PolicyModel from '../src/models/PolicyModel';
+import { connectDB } from '../src/db/db';
 
 async function importFromCSV() {
   const csvPath = path.join(__dirname, 'policies.csv');
@@ -22,13 +17,22 @@ async function importFromCSV() {
   return new Promise<void>((resolve, reject) => {
     fs.createReadStream(csvPath)
       .pipe(csvParser())
-      .on('data', (row) => {
-        policies.push(row);
-      })
+      .on('data', (row) => policies.push(row))
       .on('end', async () => {
-        await PolicyModel.deleteMany({});
-        await PolicyModel.insertMany(policies);
-        console.log(`Inserted ${policies.length} policies from CSV.`);
+        let insertedCount = 0;
+        let skippedCount = 0;
+
+        for (const policy of policies) {
+          const exists = await PolicyModel.findOne({ name: policy.name });
+          if (!exists) {
+            await PolicyModel.create(policy);
+            insertedCount++;
+          } else {
+            skippedCount++;
+          }
+        }
+
+        console.log(`✅ Inserted ${insertedCount}, Skipped ${skippedCount} duplicates.`);
         resolve();
       })
       .on('error', reject);
@@ -37,12 +41,12 @@ async function importFromCSV() {
 
 (async () => {
   try {
-    await mongoose.connect(MONGO_URI);
-    // await importFromJSON(); // ← Uncomment this if you're using JSON
-    await importFromCSV(); // ← Or this if you're using CSV
-    mongoose.disconnect();
+    await connectDB(); // uses .env now
+    await importFromCSV();
+    await mongoose.disconnect();
+    console.log('🔌 MongoDB disconnected');
   } catch (err) {
-    console.error(err);
+    console.error('❌ Import failed:', err);
     process.exit(1);
   }
 })();
