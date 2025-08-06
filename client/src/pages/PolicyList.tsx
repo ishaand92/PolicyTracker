@@ -25,10 +25,10 @@ type Policy = {
 const PolicyList: React.FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('');
+  const [category, setCategory] = useState('All');
 
   useEffect(() => {
-    axios.get<Policy[]>('http://localhost:5000/api/policies') // adjust for your actual endpoint
+    axios.get<Policy[]>('http://localhost:5000/api/policies')
       .then((res) => setPolicies(res.data))
       .catch((err) => console.error('❌ Failed to fetch policies:', err));
   }, []);
@@ -100,7 +100,7 @@ const PolicyList: React.FC = () => {
                   {policy.sector}
                 </Typography>
                 <Typography variant="body1">
-                  {policy.policy_description}
+                  {policy.policy_description}a
                 </Typography>
               </CardContent>
             </Card>
