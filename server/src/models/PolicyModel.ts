@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const PolicySchema = new mongoose.Schema(
   {
-    policy_id: String,
+    policy_id: Number,
     country_iso: String,
     policy_name: String,
     policy_title: String,
@@ -17,16 +17,16 @@ const PolicySchema = new mongoose.Schema(
     policy_type: String,
     stringency: String,
     policy_status: String,
-    decision_date: String,
-    start_date: String,
-    end_date: String,
-    high_impact: String,
+    decision_date: String, // or Date
+    start_date: String,    // or Date
+    end_date: String,      // or Date
+    high_impact: String,   // or Boolean
     policy_objective: String,
     reference: String,
     impact_indicators: String,
-    last_update: String,
+    last_update: String,   // or Date
   },
-  { strict: false } // ✅ This allows all extra fields
+  { strict: false } // keep this if your CSV might change over time
 );
 
 const PolicyModel = mongoose.model("Policy", PolicySchema, "policies");

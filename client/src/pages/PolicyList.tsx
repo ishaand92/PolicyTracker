@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import {
   Box,
   Card,
@@ -14,45 +15,28 @@ import {
 } from '@mui/material';
 
 type Policy = {
-  id: number;
-  title: string;
-  description: string;
-  date: string;
+  _id: string;
+  policy_title: string;
+  policy_description: string;
   sector: string;
-  category: string;
+  policy_type: string;
 };
 
-// const mockPolicies: Policy[] = [
-//   { id: 1, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
-//   { id: 2, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
-//   { id: 3, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
-//   { id: 4, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
-//   { id: 5, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
-//   { id: 6, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
-//   { id: 7, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
-//   { id: 8, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
-//   { id: 9, title: 'Carbon Tax Reform', description: 'Taxing carbon emissions to curb pollution.', category: 'Environment' },
-//   { id: 10, title: 'Green Subsidy', description: 'Government incentives for clean energy.', category: 'Economy' },
-//   { id: 11, title: 'Renewable Mandate', description: 'Mandating energy providers to shift to renewable sources.', category: 'Energy' },
-//   { id: 12, title: 'Plastic Ban', description: 'Regulations to ban single-use plastics.', category: 'Environment' },
-//   { id: 13, title: 'Emission Trading', description: 'Carbon trading market for emissions control.', category: 'Economy' },
-//   { id: 14, title: 'Smart Grid Act', description: 'Policy to modernize the electrical grid with smart tech.', category: 'Energy' },
-//   { id: 15, title: 'Eco Labeling Law', description: 'Mandating product transparency for eco impact.', category: 'Environment' },
-//   { id: 16, title: 'EV Incentives', description: 'Tax credits for electric vehicle purchases.', category: 'Economy' },
-//];
-
-const policies: Policy[] = [
-  
-];
-
 const PolicyList: React.FC = () => {
+  const [policies, setPolicies] = useState<Policy[]>([]);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('');
 
+  useEffect(() => {
+    axios.get<Policy[]>('http://localhost:5000/api/policies') // adjust for your actual endpoint
+      .then((res) => setPolicies(res.data))
+      .catch((err) => console.error('❌ Failed to fetch policies:', err));
+  }, []);
+
   const filteredPolicies = policies.filter(
     (policy) =>
-      policy.title.toLowerCase().includes(search.toLowerCase()) &&
-      (category === '' || policy.category === category)
+      policy.policy_title?.toLowerCase().includes(search.toLowerCase()) &&
+      (category === '' || policy.sector === category)
   );
 
   return (
@@ -107,23 +91,17 @@ const PolicyList: React.FC = () => {
           gap={3}
         >
           {filteredPolicies.map((policy) => (
-            <Card
-              key={policy.id}
-              sx={{
-                height: 240,
-                display: 'flex',
-                flexDirection: 'column',
-                backgroundColor: '#ffffff',
-              }}
-            >
+            <Card key={policy._id}>
               <CardContent>
                 <Typography variant="h6" gutterBottom>
-                  {policy.title}
+                  {policy.policy_title}
                 </Typography>
                 <Typography variant="body2" color="text.secondary" mb={1}>
-                  {policy.category}
+                  {policy.sector}
                 </Typography>
-                <Typography variant="body1">{policy.description}</Typography>
+                <Typography variant="body1">
+                  {policy.policy_description}
+                </Typography>
               </CardContent>
             </Card>
           ))}
