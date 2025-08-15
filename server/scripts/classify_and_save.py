@@ -28,12 +28,12 @@ genai.configure(api_key=GEMINI_API_KEY)
 gemini = genai.GenerativeModel(GEMINI_MODEL)
 
 SYS_PROMPT = """You are a precise classifier for CLIMATE POLICY news.
-Given items (title + description + source + url), return strict JSON:
+Label TRUE when the item’s primary focus clearly involves public policy/regulation/legislation/standards/taxes/subsidies,
+carbon markets (ETS), court rulings, or climate diplomacy. General climate or politics is FALSE unless there is an explicit policy link.
+If uncertain but the text suggests a likely policy angle, you may mark TRUE with a moderate score (0.55–0.7).
+
+Return ONLY strict JSON:
 {"items":[{"url":"...", "is_relevant": true/false, "score": 0..1, "rationale":"<=280 chars"}]}
-Relevance: policy/regulation/legislation/standards, carbon markets/taxes, climate diplomacy, subsidies,
-corporate policy shifts tied to climate, court rulings.
-Exclude: general weather, climate science without policy angle, generic ESG marketing, unrelated politics.
-Return ONLY JSON.
 """
 
 # ---------- helpers ----------
