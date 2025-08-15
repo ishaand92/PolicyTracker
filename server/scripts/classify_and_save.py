@@ -9,10 +9,13 @@ import google.generativeai as genai
 # Import your existing fetcher
 import fetch_articles
 
+from dotenv import load_dotenv
+load_dotenv()
+
 # -------- Config via env --------
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-MONGODB_URI    = os.getenv("MONGODB_URI", "mongodb://localhost:27017")
-DB_NAME        = os.getenv("DB_NAME", "newsdb")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "AIzaSyCmHvOpqD1wXComVRvVWm67CAlyvoeqYpE")
+MONGODB_URI    = os.getenv("MONGO_URI")
+DB_NAME        = os.getenv("DB_NAME", "PolicyTracker")
 COLL_NAME      = os.getenv("COLLECTION_NAME", "articles")
 GEMINI_MODEL   = os.getenv("GEMINI_MODEL", "gemini-1.5-flash")
 DEFAULT_THRESHOLD = float(os.getenv("RELEVANCE_THRESHOLD", "0.6"))
