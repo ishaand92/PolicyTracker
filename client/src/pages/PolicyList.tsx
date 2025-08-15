@@ -28,7 +28,7 @@ const PolicyList: React.FC = () => {
   const [category, setCategory] = useState('All');
 
   useEffect(() => {
-    axios.get<Policy[]>('http://localhost:5000/api/policies')
+    axios.get<Policy[]>('http://localhost:3001/api/policies')
       .then((res) => setPolicies(res.data))
       .catch((err) => console.error('❌ Failed to fetch policies:', err));
   }, []);
