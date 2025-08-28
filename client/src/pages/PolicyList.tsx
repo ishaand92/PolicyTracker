@@ -25,18 +25,26 @@ type Policy = {
 const PolicyList: React.FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [search, setSearch] = useState('');
-  const [category, setCategory] = useState('All');
+  const [category, setCategory] = useState('');
+  const [categories, setCategories] = useState<string[]>([]);
 
   useEffect(() => {
     axios.get<Policy[]>('http://localhost:3001/api/policies')
-      .then((res) => setPolicies(res.data))
+      .then((res) => {
+        setPolicies(res.data);
+        const allSectors = res.data.flatMap(p =>
+          p.sector ? p.sector.split(',').map((s: string) => s.trim()) : []
+        );
+        const uniqueSectors = Array.from(new Set(allSectors));
+        setCategories(uniqueSectors);
+      })
       .catch((err) => console.error('❌ Failed to fetch policies:', err));
   }, []);
 
   const filteredPolicies = policies.filter(
     (policy) =>
       policy.policy_title?.toLowerCase().includes(search.toLowerCase()) &&
-      (category === '' || policy.sector === category)
+      (category === '' || policy.sector.split(',').map(s => s.trim()).includes(category))
   );
 
   return (
@@ -69,9 +77,9 @@ const PolicyList: React.FC = () => {
                 label="Category"
               >
                 <MenuItem value="">All</MenuItem>
-                <MenuItem value="Environment">Environment</MenuItem>
-                <MenuItem value="Economy">Economy</MenuItem>
-                <MenuItem value="Energy">Energy</MenuItem>
+                {categories.map((c) => (
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
+                ))}
               </Select>
             </FormControl>
           </Stack>

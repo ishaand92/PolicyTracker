@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import {
   Box,
   Container,
@@ -10,36 +11,13 @@ import {
 } from '@mui/material';
 
 type NewsArticle = {
-  id: number;
+  _id: string;
   title: string;
-  summary: string;
+  description: string;
 };
 
-const topNews: NewsArticle[] = [
-  {
-    id: 1,
-    title: 'Carbon Policy Reform Announced',
-    summary: 'Sweeping new national policy imposes taxes on carbon emissions to meet net-zero targets by 2040.',
-  },
-  {
-    id: 2,
-    title: 'EV Incentives Boost Market',
-    summary: 'New subsidies and tax credits are driving record-high electric vehicle adoption rates.',
-  },
-  {
-    id: 3,
-    title: 'Plastic Ban Extended Nationwide',
-    summary: 'The government expands its single-use plastic ban with strict enforcement and new incentives.',
-  },
-];
-
-const moreNews: NewsArticle[] = Array.from({ length: 12 }, (_, i) => ({
-  id: i + 4,
-  title: `Sustainable Reform #${i + 4}`,
-  summary: `Detailed update on progress of policy initiative #${i + 4}, with wide-ranging sector impacts.`,
-}));
-
 const PolicyNews: React.FC = () => {
+  const [articles, setArticles] = useState<NewsArticle[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -55,13 +33,28 @@ const PolicyNews: React.FC = () => {
   }, [activeIndex]);
 
   useEffect(() => {
+    axios.get<NewsArticle[]>('http://localhost:3001/api/articles')
+      .then(response => {
+        setArticles(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching articles:', error);
+      });
+  }, []);
+
+  useEffect(() => {
+    if (articles.length === 0) return;
     const interval = setInterval(() => {
-      goToSlide((activeIndex + 1) % topNews.length);
+      goToSlide((activeIndex + 1) % articles.length);
     }, 5000);
     return () => clearInterval(interval);
-  }, [activeIndex, goToSlide]);
+  }, [activeIndex, goToSlide, articles]);
 
-  const isForward = activeIndex === (prevIndex + 1) % topNews.length;
+  if (articles.length === 0) {
+    return null;
+  }
+
+  const isForward = activeIndex === (prevIndex + 1) % articles.length;
 
   return (
     <Box
@@ -102,10 +95,10 @@ const PolicyNews: React.FC = () => {
             }}
           >
             <Typography variant="h4" fontWeight="bold">
-              Featured Article: {topNews[activeIndex].title}
+              Featured Article: {articles[activeIndex].title}
             </Typography>
             <Typography variant="body1" mt={2}>
-              {topNews[activeIndex].summary}
+              {articles[activeIndex].description}
             </Typography>
           </Box>
 
@@ -120,7 +113,7 @@ const PolicyNews: React.FC = () => {
               gap: 1,
             }}
           >
-            {topNews.map((_, i) => (
+            {articles.map((_, i) => (
               <IconButton
                 key={i}
                 onClick={() => goToSlide(i)}
@@ -141,8 +134,8 @@ const PolicyNews: React.FC = () => {
 
         {/* News Grid */}
         <Grid container spacing={3}>
-          {moreNews.map((news) => (
-            <Grid item xs={12} sm={6} md={4} key={news.id}>
+          {articles.slice(1).map((news) => (
+            <Grid item xs={12} sm={6} md={4} key={news._id}>
               <Card
                 sx={{
                   height: 220,
@@ -157,7 +150,7 @@ const PolicyNews: React.FC = () => {
                     {news.title}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {news.summary}
+                    {news.description}
                   </Typography>
                 </CardContent>
               </Card>
