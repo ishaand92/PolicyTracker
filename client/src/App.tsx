@@ -6,6 +6,7 @@ import Home from './pages/Home';
 import PolicyList from './pages/PolicyList';
 import PolicyDetails from './pages/PolicyDetails';
 import PolicyNews from './pages/PolicyNews';
+import Methodology from './pages/Methodology';
 import Header from './components/Header';
 import Footer from './components/Footer';
 
@@ -38,6 +39,7 @@ const App: React.FC = () => {
             <Route path="/list" element={<PolicyList />} />
             <Route path="/policies/:id" element={<PolicyDetails />} />
             <Route path="/news" element={<PolicyNews />} />
+            <Route path="/methodology" element={<Methodology />} />
           </Routes>
         </Box>
 
