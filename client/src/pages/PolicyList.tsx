@@ -1,21 +1,9 @@
-import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import React, { useEffect, useState } from "react";
+import { api } from "../services/api"; // ← use the base axios instance
 import {
-  Box,
-  Card,
-  CardContent,
-  Typography,
-  TextField,
-  MenuItem,
-  Select,
-  InputLabel,
-  FormControl,
-  Container,
-  Stack,
-  CardActions,
-  Button,
-  CardActionArea,
-  Skeleton,
+  Box, Card, CardContent, Typography, TextField, MenuItem, Select,
+  InputLabel, FormControl, Container, Stack, CardActions, Button,
+  CardActionArea, Skeleton, Pagination
 } from "@mui/material";
 import { Link as RouterLink } from "react-router-dom";
 
@@ -23,79 +11,86 @@ export type Policy = {
   _id: string;
   policy_title: string;
   policy_description: string;
-  sector: string; // comma-separated
+  sector: string;
   policy_type?: string;
+};
+
+type PolicyResponse = {
+  items: Policy[];
+  total: number;
+  page: number;
+  totalPages: number;
+  limit: number;
 };
 
 const PolicyList: React.FC = () => {
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [debouncedQ, setDebouncedQ] = useState("");
   const [category, setCategory] = useState("");
   const [categories, setCategories] = useState<string[]>([]);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+
+  // debounce search (250ms)
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedQ(search.trim()), 250);
+    return () => clearTimeout(t);
+  }, [search]);
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
-    const load = async () => {
-      try {
-        // If you set axios.defaults.baseURL = "http://localhost:3001/api", you can just use `/policies`
-        const res = await axios.get<Policy[]>("http://localhost:3001/api/policies");
+    const params = new URLSearchParams();
+    if (debouncedQ) params.set("q", debouncedQ);
+    if (category) params.set("sector", category); // server filtering by sector
+    params.set("page", String(page));
+    params.set("limit", "24");                   // tune per your UI
+    params.set("sort", "last_update:-1");        // optional
+
+    api.get<PolicyResponse>(`/policies?${params.toString()}`)
+      .then(res => {
         if (cancelled) return;
+        const payload = res.data;
 
-        const data = res.data || [];
-        setPolicies(data);
+        setPolicies(payload.items || []);
+        setTotalPages(payload.totalPages || 1);
 
+        // Build categories from the *current* page or (better) fetch once from a /facets endpoint.
         const unique = Array.from(
           new Set(
-            data.flatMap((p) =>
+            (payload.items || []).flatMap((p) =>
               p.sector ? p.sector.split(",").map((s) => s.trim()).filter(Boolean) : []
             )
           )
         ).sort((a, b) => a.localeCompare(b));
-        setCategories(unique);
-      } catch (err) {
-        console.error("❌ Failed to fetch policies:", err);
-      } finally {
+        setCategories((prev) => {
+          // keep previous categories to avoid flicker/page-bias
+          const merged = Array.from(new Set([...prev, ...unique]));
+          return merged.sort((a, b) => a.localeCompare(b));
+        });
+      })
+      .catch(err => {
+        if (!cancelled) console.error("❌ Failed to fetch policies:", err);
+      })
+      .finally(() => {
         if (!cancelled) setLoading(false);
-      }
-    };
+      });
 
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => { cancelled = true; };
+  }, [debouncedQ, category, page]);
 
-  const filteredPolicies = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return policies.filter((policy) => {
-      const matchesTitle = (policy.policy_title || "")
-        .toLowerCase()
-        .includes(q);
-      const hasCategory =
-        category === "" ||
-        (policy.sector || "")
-          .split(",")
-          .map((s) => s.trim())
-          .includes(category);
-      return matchesTitle && hasCategory;
-    });
-  }, [policies, search, category]);
+  // Reset to page 1 on filter/search change (common UX)
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedQ, category]);
 
   return (
     <Box sx={{ bgcolor: "#edf5ed", pb: 6, minHeight: "100vh" }}>
       {/* Sticky Filter Bar */}
-      <Box
-        sx={{
-          position: "sticky",
-          top: 0,
-          zIndex: 1000,
-          backgroundColor: "#e3f2e1",
-          borderBottom: "1px solid #c8dcc4",
-          py: 2,
-        }}
-      >
+      <Box sx={{ position: "sticky", top: 0, zIndex: 1000, backgroundColor: "#e3f2e1", borderBottom: "1px solid #c8dcc4", py: 2 }}>
         <Container maxWidth="xl">
           <Stack direction="row" spacing={2} flexWrap="wrap">
             <TextField
@@ -108,16 +103,10 @@ const PolicyList: React.FC = () => {
             />
             <FormControl sx={{ minWidth: 220 }} size="small">
               <InputLabel>Category</InputLabel>
-              <Select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                label="Category"
-              >
+              <Select value={category} onChange={(e) => setCategory(e.target.value)} label="Category">
                 <MenuItem value="">All</MenuItem>
                 {categories.map((c) => (
-                  <MenuItem key={c} value={c}>
-                    {c}
-                  </MenuItem>
+                  <MenuItem key={c} value={c}>{c}</MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -129,25 +118,18 @@ const PolicyList: React.FC = () => {
       <Container maxWidth="xl" sx={{ mt: 3 }}>
         <Box
           display="grid"
-          gridTemplateColumns={{
-            xs: "1fr",
-            sm: "repeat(2, 1fr)",
-            md: "repeat(3, 1fr)",
-            lg: "repeat(4, 1fr)",
-          }}
+          gridTemplateColumns={{ xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)", lg: "repeat(4, 1fr)" }}
           gap={3}
         >
           {loading
             ? Array.from({ length: 8 }).map((_, i) => (
-                <Card key={i}>
-                  <CardContent>
-                    <Skeleton variant="text" width="80%" height={28} />
-                    <Skeleton variant="text" width="60%" />
-                    <Skeleton variant="rectangular" height={72} sx={{ mt: 1 }} />
-                  </CardContent>
-                </Card>
+                <Card key={i}><CardContent>
+                  <Skeleton variant="text" width="80%" height={28} />
+                  <Skeleton variant="text" width="60%" />
+                  <Skeleton variant="rectangular" height={72} sx={{ mt: 1 }} />
+                </CardContent></Card>
               ))
-            : filteredPolicies.map((policy) => (
+            : policies.map((policy) => (
                 <Card key={policy._id} sx={{ display: "flex", flexDirection: "column" }}>
                   <CardActionArea component={RouterLink} to={`/policies/${policy._id}`}>
                     <CardContent>
@@ -172,23 +154,30 @@ const PolicyList: React.FC = () => {
                     </CardContent>
                   </CardActionArea>
                   <CardActions sx={{ mt: "auto", pt: 0, px: 2, pb: 2 }}>
-                    <Button
-                      component={RouterLink}
-                      to={`/policies/${policy._id}`}
-                      size="small"
-                      variant="outlined"
-                    >
+                    <Button component={RouterLink} to={`/policies/${policy._id}`} size="small" variant="outlined">
                       View details
                     </Button>
                   </CardActions>
                 </Card>
-              ))}
+              ))
+          }
         </Box>
 
-        {!loading && filteredPolicies.length === 0 && (
-          <Typography variant="body1" mt={3}>
-            No policies found.
-          </Typography>
+        {!loading && policies.length === 0 && (
+          <Typography variant="body1" mt={3}>No policies found.</Typography>
+        )}
+
+        {/* Pagination */}
+        {!loading && totalPages > 1 && (
+          <Stack alignItems="center" mt={4}>
+            <Pagination
+              page={page}
+              count={totalPages}
+              onChange={(_, p) => setPage(p)}
+              variant="outlined"
+              shape="rounded"
+            />
+          </Stack>
         )}
       </Container>
     </Box>

@@ -32,14 +32,17 @@ const Header: React.FC = () => {
       }}
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
-        {/* Brand */}
-        <Typography
-          variant="h6"
-          onClick={() => navigate('/')}
-          sx={{ cursor: 'pointer', fontWeight: 600 }}
-        >
-          Policy Tracker
-        </Typography>
+        {/* Brand with Icon */}
+        <Box display="flex" alignItems="center" onClick={() => navigate('/')} sx={{ cursor: 'pointer' }}>
+          <img
+            src="/icon.png"
+            alt="Policy Tracker Icon"
+            style={{ width: 28, height: 28, marginRight: 8 }}
+          />
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Policy Tracker
+          </Typography>
+        </Box>
 
         {/* Navigation */}
         <Box display="flex" alignItems="center">

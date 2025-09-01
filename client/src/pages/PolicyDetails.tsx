@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import {
   Box,
@@ -12,8 +12,21 @@ import {
   Divider,
   Button,
   CircularProgress,
+  Breadcrumbs,
+  Link as MUILink,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { useParams, Link as RouterLink } from "react-router-dom";
+import { useParams, Link as RouterLink, useLocation } from "react-router-dom";
+import ArrowBackIcon from "@mui/icons-material/ArrowBack";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ContentCopyIcon from "@mui/icons-material/ContentCopy";
+import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined";
+import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
+import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
+import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
+import PolicyIcon from "@mui/icons-material/Policy";
 
 export type Policy = {
   _id: string;
@@ -37,11 +50,12 @@ export type Policy = {
   end_date?: string;
   high_impact?: string;
   policy_objective?: string;
-  reference?: string;
   impact_indicators?: string;
+  reference?: string;
   last_update?: string;
 };
 
+// --- helpers ---
 const label = (t: string) => (
   <Typography variant="subtitle2" color="text.secondary" sx={{ minWidth: 180 }}>
     {t}
@@ -57,32 +71,135 @@ const row = (t: string, v?: React.ReactNode) => (
   </Stack>
 );
 
+// Extract a usable date string from messy inputs (HTML, ISO, DD/MM/YYYY, etc.)
+const extractDateString = (v?: string) => {
+  if (!v) return undefined;
+
+  // 1) If it’s an HTML <time ...> element, grab the datetime attr
+  const m = v.match(/datetime\s*=\s*"([^"]+)"/i);
+  if (m?.[1]) return m[1];
+
+  // 2) Strip any HTML tags and trim
+  const plain = v.replace(/<[^>]*>/g, "").trim();
+  if (!plain) return undefined;
+
+  // 3) If DD/MM/YYYY, convert to ISO-like for safe parsing
+  const ddmmyyyy = plain.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})$/);
+  if (ddmmyyyy) {
+    const [, dd, mm, yyyyRaw] = ddmmyyyy;
+    const yyyy = yyyyRaw.length === 2 ? `20${yyyyRaw}` : yyyyRaw; // naive 2-digit year -> 20YY
+    // Return ISO-ish string so new Date() is reliable in all browsers
+    return `${yyyy}-${mm.padStart(2, "0")}-${dd.padStart(2, "0")}T00:00:00Z`;
+  }
+
+  // 4) Otherwise return as-is (handles ISO, RFC strings, etc.)
+  return plain;
+};
+
+// Force stable dd/mm/yyyy output no matter the locale
+const formatDate = (v?: string) => {
+  const s = extractDateString(v);
+  if (!s) return "—";
+  const d = new Date(s);
+  if (Number.isNaN(d.getTime())) return s; // fallback to original text if unparsable
+
+  const day = String(d.getUTCDate()).padStart(2, "0");
+  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const year = d.getUTCFullYear();
+  return `${day}/${month}/${year}`;
+};
+
+const isUrlLike = (s?: string) => !!s && /^https?:\/\//i.test(s);
+
+type ChipColor =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "error"
+  | "info"
+  | "success"
+  | "warning";
+
+const statusColor = (status?: string): ChipColor => {
+  if (!status) return "default";
+  const s = status.toLowerCase();
+  if (s.includes("in force") || s.includes("active")) return "success";
+  if (s.includes("draft") || s.includes("proposed")) return "warning";
+  if (s.includes("expired") || s.includes("repealed")) return "default";
+  return "info";
+};
+
+const chipList = (items: string[], emptyText = "—") =>
+  items.length ? (
+    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+      {items.map((x) => (
+        <Chip key={x} label={x} size="small" />
+      ))}
+    </Stack>
+  ) : (
+    <Typography variant="body2">{emptyText}</Typography>
+  );
+
+const sectionTitle = (text: string) => (
+  <Stack direction="row" alignItems="center" spacing={1.2} sx={{ mb: 1 }}>
+    <InfoOutlinedIcon fontSize="small" />
+    <Typography variant="h6">{text}</Typography>
+  </Stack>
+);
+
 const PolicyDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const [data, setData] = useState<Policy | null>(null);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const location = useLocation();
 
   useEffect(() => {
     let cancelled = false;
+    setLoading(true);
 
-    const load = async () => {
-      try {
-        // If you set axios.defaults.baseURL = "http://localhost:3001/api", you can just use `/policies/${id}`
-        const res = await axios.get<Policy>(`http://localhost:3001/api/policies/${id}`);
-        if (!cancelled) setData(res.data);
-      } catch (e: any) {
-        if (!cancelled) setErr(e?.response?.data?.message || "Failed to load policy");
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
+    axios
+      .get<Policy>(`http://localhost:3001/api/policies/${id}`)
+      .then((res) => !cancelled && setData(res.data))
+      .catch(
+        (e) => !cancelled && setErr(e?.response?.data?.message || "Failed to load policy")
+      )
+      .finally(() => !cancelled && setLoading(false));
 
-    void load();
     return () => {
       cancelled = true;
     };
   }, [id]);
+
+  const sectors = useMemo(
+    () =>
+      (data?.sector || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    [data?.sector]
+  );
+
+  const instruments = useMemo(
+    () =>
+      (data?.policy_instrument || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    [data?.policy_instrument]
+  );
+
+  const title = data?.policy_title || data?.policy_name || "Policy";
+  const shareUrl =
+    typeof window !== "undefined" ? window.location.origin + location.pathname : "";
+
+  // Narrow the reference URL to a non-undefined string for <a> usage
+  const refUrl = useMemo(() => {
+    if (isUrlLike(data?.reference)) {
+      return data!.reference as string;
+    }
+    return null;
+  }, [data?.reference]);
 
   if (loading) {
     return (
@@ -101,100 +218,190 @@ const PolicyDetails: React.FC = () => {
         <Typography color="error" sx={{ mb: 2 }}>
           {err || "Policy not found"}
         </Typography>
-        <Button component={RouterLink} to="/" variant="outlined">
+        <Button component={RouterLink} to="/" variant="outlined" startIcon={<ArrowBackIcon />}>
           Back to list
         </Button>
       </Container>
     );
   }
 
-  const sectors = (data.sector || "")
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean);
-
   return (
-    <Box sx={{ bgcolor: "#edf5ed", minHeight: "100vh", pb: 6 }}>
-      <Container maxWidth="lg" sx={{ py: 3 }}>
-        <Stack
-          direction={{ xs: "column", sm: "row" }}
-          justifyContent="space-between"
-          alignItems={{ xs: "flex-start", sm: "center" }}
-          sx={{ mb: 2, gap: 2 }}
-        >
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            {data.policy_title || data.policy_name || "Policy"}
-          </Typography>
-          <Button component={RouterLink} to="/" variant="outlined">
-            Back to list
-          </Button>
-        </Stack>
+    <Box sx={{ bgcolor: "#f7faf7", minHeight: "100vh", pb: 8 }}>
+      {/* Hero Header */}
+      <Box
+        sx={{
+          background:
+            "linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.00) 100%), #e8f3e8",
+          borderBottom: "1px solid #dbe8d9",
+        }}
+      >
+        <Container maxWidth="lg" sx={{ py: 2 }}>
+          <Breadcrumbs aria-label="breadcrumb" sx={{ mb: 1 }} separator="›">
+            <MUILink component={RouterLink} to="/" underline="hover" color="inherit">
+              Policies
+            </MUILink>
+            <Typography color="text.primary" noWrap maxWidth="60%">
+              {title}
+            </Typography>
+          </Breadcrumbs>
 
-        <Grid container spacing={3}>
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Description
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            justifyContent="space-between"
+            alignItems={{ xs: "flex-start", md: "center" }}
+            spacing={2}
+          >
+            <Stack spacing={1}>
+              <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
+                <PolicyIcon fontSize="small" />
+                <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
+                  {title}
                 </Typography>
+              </Stack>
+
+              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                {data.country && (
+                  <Chip
+                    icon={<PlaceOutlinedIcon />}
+                    label={data.country}
+                    size="small"
+                    variant="outlined"
+                  />
+                )}
+                {data.country_iso && <Chip label={data.country_iso} size="small" />}
+                {data.policy_status && (
+                  <Chip
+                    label={data.policy_status}
+                    size="small"
+                    color={statusColor(data.policy_status)}
+                    variant="filled"
+                  />
+                )}
+                {data.stringency && (
+                  <Chip icon={<LocalOfferOutlinedIcon />} label={data.stringency} size="small" />
+                )}
+                {data.policy_type && (
+                  <Chip icon={<CategoryOutlinedIcon />} label={data.policy_type} size="small" />
+                )}
+              </Stack>
+            </Stack>
+
+            <Stack direction="row" spacing={1}>
+              {refUrl && (
+                <Button
+                  component="a"
+                  href={refUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  endIcon={<OpenInNewIcon />}
+                >
+                  Open Reference
+                </Button>
+              )}
+              <Tooltip title="Copy link">
+                <IconButton
+                  onClick={() => {
+                    try {
+                      navigator.clipboard?.writeText(shareUrl);
+                    } catch (_) {
+                      /* no-op */
+                    }
+                  }}
+                >
+                  <ContentCopyIcon fontSize="small" />
+                </IconButton>
+              </Tooltip>
+              <Button
+                component={RouterLink}
+                to="/"
+                variant="outlined"
+                startIcon={<ArrowBackIcon />}
+              >
+                Back
+              </Button>
+            </Stack>
+          </Stack>
+        </Container>
+      </Box>
+
+      {/* Main Content */}
+      <Container maxWidth="lg" sx={{ py: 3 }}>
+        <Grid container spacing={3}>
+          {/* Left: Content */}
+          <Grid item xs={12} md={8}>
+            <Card sx={{ borderRadius: 2, boxShadow: "none", border: "1px solid #e5efe4" }}>
+              <CardContent>
+                {sectionTitle("Overview")}
                 <Typography variant="body1" sx={{ whiteSpace: "pre-wrap" }}>
                   {data.policy_description || "—"}
                 </Typography>
 
-                <Divider sx={{ my: 2 }} />
+                <Divider sx={{ my: 3 }} />
 
-                <Typography variant="h6" gutterBottom>
-                  Meta
-                </Typography>
-                {row("Policy Type", data.policy_type)}
-                {row("Instrument", data.policy_instrument)}
-                {row("Stringency", data.stringency)}
-                {row("Status", data.policy_status)}
-                {row("High Impact", data.high_impact)}
+                {sectionTitle("Objectives & Impacts")}
                 {row("Objective", data.policy_objective)}
                 {row("Impact Indicators", data.impact_indicators)}
-                {row("Reference", data.reference)}
+                {row("High Impact", data.high_impact)}
+
+                <Divider sx={{ my: 3 }} />
+
+                {sectionTitle("Instruments & Sectors")}
+                {row("Instruments", chipList(instruments))}
+                {row("Sectors", chipList(sectors))}
               </CardContent>
             </Card>
           </Grid>
 
+          {/* Right: Sticky Meta */}
           <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Jurisdiction
-                </Typography>
-                {row("Country", data.country)}
-                {row("ISO", data.country_iso)}
-                {row("Jurisdiction", data.jurisdiction)}
-                {row("Supranational Region", data.supranational_region)}
-                {row("Subnational Region", data.subnational_region)}
-                {row("City/Local", data.policy_city_or_local)}
+            <Stack position={{ md: "sticky" }} top={{ md: 16 }} spacing={2}>
+              <Card sx={{ borderRadius: 2, boxShadow: "none", border: "1px solid #e5efe4" }}>
+                <CardContent>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                    <EventOutlinedIcon fontSize="small" />
+                    <Typography variant="h6">Dates</Typography>
+                  </Stack>
+                  {row("Decision Date", formatDate(data.decision_date))}
+                  {row("Start Date", formatDate(data.start_date))}
+                  {row("End Date", formatDate(data.end_date))}
+                  {row("Last Update", formatDate(data.last_update))}
+                </CardContent>
+              </Card>
 
-                <Divider sx={{ my: 2 }} />
+              <Card sx={{ borderRadius: 2, boxShadow: "none", border: "1px solid #e5efe4" }}>
+                <CardContent>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
+                    <PlaceOutlinedIcon fontSize="small" />
+                    <Typography variant="h6">Jurisdiction</Typography>
+                  </Stack>
+                  {row("Country", data.country)}
+                  {row("ISO", data.country_iso)}
+                  {row("Jurisdiction", data.jurisdiction)}
+                  {row("Supranational Region", data.supranational_region)}
+                  {row("Subnational Region", data.subnational_region)}
+                  {row("City/Local", data.policy_city_or_local)}
+                </CardContent>
+              </Card>
 
-                <Typography variant="h6" gutterBottom>
-                  Dates
-                </Typography>
-                {row("Decision Date", data.decision_date)}
-                {row("Start Date", data.start_date)}
-                {row("End Date", data.end_date)}
-                {row("Last Update", data.last_update)}
-
-                <Divider sx={{ my: 2 }} />
-
-                <Typography variant="h6" gutterBottom>
-                  Sectors
-                </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
-                  {sectors.length ? (
-                    sectors.map((s) => <Chip key={s} label={s} size="small" />)
-                  ) : (
-                    <Typography variant="body2">—</Typography>
-                  )}
-                </Stack>
-              </CardContent>
-            </Card>
+              {refUrl ? (
+                <Button
+                  fullWidth
+                  component="a"
+                  href={refUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  endIcon={<OpenInNewIcon />}
+                >
+                  Open Source / Reference
+                </Button>
+              ) : (
+                <Button fullWidth variant="outlined" disabled>
+                  No External Reference
+                </Button>
+              )}
+            </Stack>
           </Grid>
         </Grid>
       </Container>
