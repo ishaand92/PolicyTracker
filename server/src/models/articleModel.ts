@@ -1,52 +1,61 @@
-import mongoose, { Schema, Document } from 'mongoose';
+// src/models/articleModel.ts
+import mongoose, { Schema, Document } from "mongoose";
 
 export interface IGeminiMeta {
   score: number;
   rationale: string;
   model: string;
-  classifiedAt: number; // epoch seconds
+  classifiedAt: number;
 }
-
 export interface IArticle extends Document {
   title: string;
   description?: string;
   content?: string;
   author?: string;
   source?: string;
-  url: string;               // unique
+  url: string;
   urlToImage?: string;
-  publishedAt?: Date;        // NewsAPI field
-  publishedDate?: Date;      // legacy field (optional)
-  relevance?: number;        // 1 = relevant, 0 = not inserted by pipeline
+  publishedAt?: Date;
+  publishedDate?: Date;
+  relevance?: number;
   gemini?: IGeminiMeta;
-  ingestedAt?: number;       // epoch seconds
+  ingestedAt?: number;
 }
 
-const GeminiSchema = new Schema<IGeminiMeta>({
-  score: { type: Number },
-  rationale: { type: String },
-  model: { type: String },
-  classifiedAt: { type: Number },
-}, { _id: false });
+const GeminiSchema = new Schema<IGeminiMeta>(
+  {
+    score: Number,
+    rationale: String,
+    model: String,
+    classifiedAt: Number,
+  },
+  { _id: false }
+);
 
-const ArticleSchema = new Schema<IArticle>({
-  title: { type: String, required: true },
-  description: { type: String },
-  content: { type: String },
-  author: { type: String },
-  source: { type: String },
-  url: { type: String, required: true, unique: true },
-  urlToImage: { type: String },
-  publishedAt: { type: Date },     // prefer this (matches NewsAPI)
-  publishedDate: { type: Date },   // keep for backward-compat if you already have data
-  relevance: { type: Number, default: 1 },
-  gemini: { type: GeminiSchema },
-  ingestedAt: { type: Number },
-}, { timestamps: true });
+const ArticleSchema = new Schema<IArticle>(
+  {
+    title: { type: String, required: true },
+    description: String,
+    content: String,
+    author: String,
+    source: String,
+    url: { type: String, required: true, unique: true },
+    urlToImage: String,
+    publishedAt: Date,
+    publishedDate: Date,
+    relevance: { type: Number, default: 1 },
+    gemini: GeminiSchema,
+    ingestedAt: Number,
+  },
+  {
+    timestamps: true,
+    collection: "articles", // 👈 force the right collection
+  }
+);
 
 ArticleSchema.index({ url: 1 }, { unique: true });
 ArticleSchema.index({ publishedAt: -1 });
-ArticleSchema.index({ relevance: -1, 'gemini.score': -1 });
+ArticleSchema.index({ relevance: -1, "gemini.score": -1 });
 
-const Article = mongoose.model<IArticle>('Article', ArticleSchema);
+const Article = mongoose.model<IArticle>("Article", ArticleSchema);
 export default Article;

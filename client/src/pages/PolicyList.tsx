@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { api } from "../services/api"; // ← use the base axios instance
+import { api } from "../services/api";
 import {
   Box, Card, CardContent, Typography, TextField, MenuItem, Select,
   InputLabel, FormControl, Container, Stack, CardActions, Button,
@@ -33,7 +33,6 @@ const PolicyList: React.FC = () => {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // debounce search (250ms)
   useEffect(() => {
     const t = setTimeout(() => setDebouncedQ(search.trim()), 250);
     return () => clearTimeout(t);
@@ -45,20 +44,18 @@ const PolicyList: React.FC = () => {
 
     const params = new URLSearchParams();
     if (debouncedQ) params.set("q", debouncedQ);
-    if (category) params.set("sector", category); // server filtering by sector
+    if (category) params.set("sector", category);
     params.set("page", String(page));
-    params.set("limit", "24");                   // tune per your UI
-    params.set("sort", "last_update:-1");        // optional
+    params.set("limit", "24");
+    params.set("sort", "last_update:-1");
 
     api.get<PolicyResponse>(`/policies?${params.toString()}`)
       .then(res => {
         if (cancelled) return;
         const payload = res.data;
-
         setPolicies(payload.items || []);
         setTotalPages(payload.totalPages || 1);
 
-        // Build categories from the *current* page or (better) fetch once from a /facets endpoint.
         const unique = Array.from(
           new Set(
             (payload.items || []).flatMap((p) =>
@@ -66,8 +63,7 @@ const PolicyList: React.FC = () => {
             )
           )
         ).sort((a, b) => a.localeCompare(b));
-        setCategories((prev) => {
-          // keep previous categories to avoid flicker/page-bias
+        setCategories(prev => {
           const merged = Array.from(new Set([...prev, ...unique]));
           return merged.sort((a, b) => a.localeCompare(b));
         });
@@ -82,7 +78,6 @@ const PolicyList: React.FC = () => {
     return () => { cancelled = true; };
   }, [debouncedQ, category, page]);
 
-  // Reset to page 1 on filter/search change (common UX)
   useEffect(() => {
     setPage(1);
   }, [debouncedQ, category]);
@@ -103,7 +98,11 @@ const PolicyList: React.FC = () => {
             />
             <FormControl sx={{ minWidth: 220 }} size="small">
               <InputLabel>Category</InputLabel>
-              <Select value={category} onChange={(e) => setCategory(e.target.value)} label="Category">
+              <Select
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+                label="Category"
+              >
                 <MenuItem value="">All</MenuItem>
                 {categories.map((c) => (
                   <MenuItem key={c} value={c}>{c}</MenuItem>
@@ -167,7 +166,6 @@ const PolicyList: React.FC = () => {
           <Typography variant="body1" mt={3}>No policies found.</Typography>
         )}
 
-        {/* Pagination */}
         {!loading && totalPages > 1 && (
           <Stack alignItems="center" mt={4}>
             <Pagination

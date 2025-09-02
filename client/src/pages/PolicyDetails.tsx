@@ -1,5 +1,4 @@
 import React, { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import {
   Box,
   Container,
@@ -27,6 +26,7 @@ import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
 import PolicyIcon from "@mui/icons-material/Policy";
+import { api } from "../services/api";
 
 export type Policy = {
   _id: string;
@@ -158,17 +158,13 @@ const PolicyDetails: React.FC = () => {
     let cancelled = false;
     setLoading(true);
 
-    axios
-      .get<Policy>(`http://localhost:3001/api/policies/${id}`)
+    api
+      .get<Policy>(`/policies/${id}`)
       .then((res) => !cancelled && setData(res.data))
-      .catch(
-        (e) => !cancelled && setErr(e?.response?.data?.message || "Failed to load policy")
-      )
+      .catch((e) => !cancelled && setErr(e?.response?.data?.message || "Failed to load policy"))
       .finally(() => !cancelled && setLoading(false));
 
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [id]);
 
   const sectors = useMemo(
