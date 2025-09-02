@@ -71,7 +71,7 @@ const PolicyList: React.FC = () => {
       .catch(err => {
         if (!cancelled) console.error("❌ Failed to fetch policies:", err);
       })
-      .finally(() => {
+      .then(() => {
         if (!cancelled) setLoading(false);
       });
 
