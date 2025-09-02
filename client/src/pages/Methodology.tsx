@@ -429,7 +429,7 @@ const PipelineStep: React.FC<{
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.35, ease: "easeOut" }}
-      onMouseMove={(e) => {
+      onMouseMove={(e: React.MouseEvent<HTMLDivElement>) => {
         const el = e.currentTarget as HTMLDivElement;
         const rect = el.getBoundingClientRect();
         const x = (e.clientX - rect.left) / rect.width;
@@ -439,7 +439,7 @@ const PipelineStep: React.FC<{
         el.style.setProperty("--mx", `${x * 100}%`);
         el.style.setProperty("--my", `${y * 100}%`);
       }}
-      onMouseLeave={(e) => {
+      onMouseLeave={(e: React.MouseEvent<HTMLDivElement>) => {
         const el = e.currentTarget as HTMLDivElement;
         el.style.setProperty("--mx", "50%");
         el.style.setProperty("--my", "50%");

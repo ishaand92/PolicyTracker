@@ -164,7 +164,9 @@ const PolicyDetails: React.FC = () => {
       .catch(
         (e) => !cancelled && setErr(e?.response?.data?.message || "Failed to load policy")
       )
-      .finally(() => !cancelled && setLoading(false));
+      .then(() => {
+        if (!cancelled) setLoading(false);
+      });
 
     return () => {
       cancelled = true;

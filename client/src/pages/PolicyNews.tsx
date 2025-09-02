@@ -33,7 +33,7 @@ const PolicyNews: React.FC = () => {
   }, [activeIndex]);
 
   useEffect(() => {
-    axios.get<NewsArticle[]>('http://localhost:3001/api/articles')
+    axios.get<NewsArticle[]>('/server/scripts/articles.json')
       .then(response => {
         setArticles(response.data);
       })
