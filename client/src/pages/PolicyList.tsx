@@ -13,6 +13,7 @@ export type Policy = {
   policy_description: string;
   sector: string;
   policy_type?: string;
+  policy_reference?: string; // added property for reference URLs
 };
 
 type PolicyResponse = {
@@ -156,6 +157,22 @@ const PolicyList: React.FC = () => {
                     <Button component={RouterLink} to={`/policies/${policy._id}`} size="small" variant="outlined">
                       View details
                     </Button>
+
+                    {policy.policy_reference && (() => {
+                      const firstReferenceLink = "https" + policy.policy_reference.split("https").filter(Boolean)[0];
+                      return (
+                        <Button
+                          component="a"
+                          href={firstReferenceLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          size="small"
+                          variant="outlined"
+                        >
+                          Open Source / Reference
+                        </Button>
+                      );
+                    })()}
                   </CardActions>
                 </Card>
               ))

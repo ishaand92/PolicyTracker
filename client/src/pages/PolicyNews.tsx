@@ -10,11 +10,16 @@ import {
   IconButton,
 } from '@mui/material';
 
-type NewsArticle = {
-  _id: string;
+interface NewsArticle {
   title: string;
   description: string;
-};
+  url: string;
+  urlToImage: string;
+  publishedAt: string;
+  author?: string;
+  source: { id: string | null; name: string };
+}
+
 
 const PolicyNews: React.FC = () => {
   const [news, setArticles] = useState<NewsArticle[]>([]);
@@ -33,13 +38,9 @@ const PolicyNews: React.FC = () => {
   }, [activeIndex]);
 
   useEffect(() => {
-    axios.get<NewsArticle[]>('/server/scripts/articles.json')
-      .then(response => {
-        setArticles(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching news:', error);
-      });
+    axios.get<NewsArticle[]>('/api/articles')
+    .then(response => setArticles(response.data))
+    .catch(error => console.error('Error fetching news:', error));;
   }, []);
 
   useEffect(() => {
@@ -135,7 +136,7 @@ const PolicyNews: React.FC = () => {
         {/* News Grid */}
         <Grid container spacing={3}>
           {news.slice(1).map((news) => (
-            <Grid item xs={12} sm={6} md={4} key={news._id}>
+            <Grid item xs={12} sm={6} md={4} key={news.title}>
               <Card
                 sx={{
                   height: 220,
@@ -146,6 +147,9 @@ const PolicyNews: React.FC = () => {
                 }}
               >
                 <CardContent>
+                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                    {news.source?.name}
+                  </Typography>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {news.title}
                   </Typography>

@@ -25,7 +25,6 @@ import PlaceOutlinedIcon from "@mui/icons-material/PlaceOutlined";
 import EventOutlinedIcon from "@mui/icons-material/EventOutlined";
 import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import LocalOfferOutlinedIcon from "@mui/icons-material/LocalOfferOutlined";
-import PolicyIcon from "@mui/icons-material/Policy";
 import { api } from "../services/api";
 
 export type Policy = {
@@ -96,17 +95,18 @@ const extractDateString = (v?: string) => {
   return plain;
 };
 
-// Force stable dd/mm/yyyy output no matter the locale
+// Force stable "Mon dd, yyyy" output no matter the locale
 const formatDate = (v?: string) => {
   const s = extractDateString(v);
   if (!s) return "—";
   const d = new Date(s);
   if (Number.isNaN(d.getTime())) return s; // fallback to original text if unparsable
 
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const day = String(d.getUTCDate()).padStart(2, "0");
-  const month = String(d.getUTCMonth() + 1).padStart(2, "0");
+  const month = monthNames[d.getUTCMonth()];
   const year = d.getUTCFullYear();
-  return `${day}/${month}/${year}`;
+  return `${month} ${day}, ${year}`;
 };
 
 const isUrlLike = (s?: string) => !!s && /^https?:\/\//i.test(s);
@@ -249,7 +249,6 @@ const PolicyDetails: React.FC = () => {
           >
             <Stack spacing={1}>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap" useFlexGap>
-                <PolicyIcon fontSize="small" />
                 <Typography variant="h4" sx={{ fontWeight: 800, lineHeight: 1.1 }}>
                   {title}
                 </Typography>
@@ -264,7 +263,6 @@ const PolicyDetails: React.FC = () => {
                     variant="outlined"
                   />
                 )}
-                {data.country_iso && <Chip label={data.country_iso} size="small" />}
                 {data.policy_status && (
                   <Chip
                     label={data.policy_status}
@@ -283,31 +281,6 @@ const PolicyDetails: React.FC = () => {
             </Stack>
 
             <Stack direction="row" spacing={1}>
-              {refUrl && (
-                <Button
-                  component="a"
-                  href={refUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="contained"
-                  endIcon={<OpenInNewIcon />}
-                >
-                  Open Reference
-                </Button>
-              )}
-              <Tooltip title="Copy link">
-                <IconButton
-                  onClick={() => {
-                    try {
-                      navigator.clipboard?.writeText(shareUrl);
-                    } catch (_) {
-                      /* no-op */
-                    }
-                  }}
-                >
-                  <ContentCopyIcon fontSize="small" />
-                </IconButton>
-              </Tooltip>
               <Button
                 component={RouterLink}
                 to="/"
@@ -352,6 +325,24 @@ const PolicyDetails: React.FC = () => {
           {/* Right: Sticky Meta */}
           <Grid item xs={12} md={4}>
             <Stack position={{ md: "sticky" }} top={{ md: 16 }} spacing={2}>
+              {refUrl ? (
+                <Button
+                  fullWidth
+                  component="a"
+                  href={refUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  variant="contained"
+                  endIcon={<OpenInNewIcon />}
+                >
+                  Open Source / Reference
+                </Button>
+              ) : (
+                <Button fullWidth variant="outlined" disabled>
+                  No External Reference
+                </Button>
+              )}
+
               <Card sx={{ borderRadius: 2, boxShadow: "none", border: "1px solid #e5efe4" }}>
                 <CardContent>
                   <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1 }}>
@@ -379,24 +370,6 @@ const PolicyDetails: React.FC = () => {
                   {row("City/Local", data.policy_city_or_local)}
                 </CardContent>
               </Card>
-
-              {refUrl ? (
-                <Button
-                  fullWidth
-                  component="a"
-                  href={refUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="contained"
-                  endIcon={<OpenInNewIcon />}
-                >
-                  Open Source / Reference
-                </Button>
-              ) : (
-                <Button fullWidth variant="outlined" disabled>
-                  No External Reference
-                </Button>
-              )}
             </Stack>
           </Grid>
         </Grid>
