@@ -14,10 +14,23 @@ import {
 } from '@mui/material';
 import { api } from '../services/api';
 
-type NewsArticle = {
+type Article = {
   _id: string;
   title: string;
-  description: string;
+  description?: string | null;
+  url?: string;
+  urlToImage?: string | null;
+  publishedAt?: string | null;
+  publishedAtDisplay?: string | null;
+  source?: string | null;
+};
+
+type ApiResponse = {
+  items: Article[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 };
 
 const PolicyNews: React.FC = () => {
@@ -39,13 +52,51 @@ const PolicyNews: React.FC = () => {
   }, [activeIndex]);
 
   useEffect(() => {
-    axios.get<NewsArticle[]>('/server/scripts/articles.json')
-      .then(response => {
-        setArticles(response.data);
-      })
-      .catch(error => {
-        console.error('Error fetching news:', error);
-      });
+    let cancelled = false;
+
+    (async () => {
+      setLoading(true);
+      try {
+        const res = await api.get<ApiResponse>('/articles', {
+          params: { page: 1, limit: 25 },
+        });
+
+        if (cancelled) return;
+
+        const items = (res.data?.items ?? []).map((d: any) => {
+          const source =
+            typeof d.source === 'string'
+              ? d.source
+              : d?.source?.name ?? d?.source?.id ?? '';
+
+          return {
+            _id: String(d._id),
+            title: d.title ?? '(untitled)',
+            description: d.description ?? '',
+            url: d.url ?? '',
+            urlToImage: typeof d.urlToImage === 'string' ? d.urlToImage : undefined,
+            publishedAt: d.publishedAt ?? null,
+            publishedAtDisplay: d.publishedAtDisplay ?? '',
+            source,
+          } as Article;
+        });
+
+        setArticles(items);
+        setActiveIndex(0);
+        setPrevIndex(0);
+      } catch (e: any) {
+        if (!cancelled) {
+          const detail = e?.response
+            ? `${e.response.status} ${e.response.statusText}`
+            : e?.message || 'Network error';
+          setErrMsg(`Failed to fetch articles: ${detail}`);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, []);
 
   useEffect(() => {
@@ -160,25 +211,56 @@ const PolicyNews: React.FC = () => {
 
         {/* Grid of more articles */}
         <Grid container spacing={3}>
-          {news.slice(1).map((news) => (
-            <Grid item xs={12} sm={6} md={4} key={news._id}>
+          {articles.slice(1).map((a) => (
+            <Grid item xs={12} sm={6} md={4} key={a._id}>
               <Card
                 sx={{
                   height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'center',
-                  bgcolor: '#ffffff',
+                  borderRadius: 3,
+                  boxShadow: 2,
                 }}
               >
-                <CardContent>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    {news.title}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {news.description}
-                  </Typography>
-                </CardContent>
+                <CardActionArea
+                  sx={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'stretch' }}
+                  onClick={() => a.url && window.open(a.url, '_blank')}
+                >
+                  {a.urlToImage && (
+                    <CardMedia
+                      component="img"
+                      src={a.urlToImage}
+                      alt={a.title}
+                      sx={{ height: 160, objectFit: 'cover' }}
+                    />
+                  )}
+                  <CardContent sx={{ flexGrow: 1 }}>
+                    <Typography variant="overline" display="block" gutterBottom>
+                      {a.source} • {a.publishedAtDisplay ?? ''}
+                    </Typography>
+                    <Typography
+                      variant="subtitle1"
+                      fontWeight="bold"
+                      gutterBottom
+                      noWrap
+                      title={a.title}
+                    >
+                      {a.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                      }}
+                    >
+                      {a.description}
+                    </Typography>
+                  </CardContent>
+                </CardActionArea>
               </Card>
             </Grid>
           ))}
