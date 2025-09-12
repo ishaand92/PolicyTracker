@@ -7,6 +7,7 @@ import dotenv from "dotenv";
 import { connectDB } from "./db/db";
 import policyRoutes from "./routes/policyRoute";
 import newsRoutes from "./routes/newsRoute";
+import articleRoutes from "./routes/articleRoute";
 
 dotenv.config({ path: "./.env" });
 
@@ -21,6 +22,7 @@ app.use(express.static(path.join(__dirname, "../../client/build")));
 
 app.use("/api/policies", policyRoutes);
 app.use("/api/news", newsRoutes);
+app.use("/api/articles", articleRoutes);
 
 app.get("/home", (_req, res) => {
   res.sendFile(path.join(__dirname, "../../client/build/index.html"));

@@ -53,7 +53,6 @@ const ArticleSchema = new Schema<IArticle>(
   }
 );
 
-ArticleSchema.index({ url: 1 }, { unique: true });
 ArticleSchema.index({ publishedAt: -1 });
 ArticleSchema.index({ relevance: -1, "gemini.score": -1 });
 

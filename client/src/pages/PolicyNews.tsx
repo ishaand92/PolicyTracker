@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   Box,
   Container,
@@ -7,27 +6,29 @@ import {
   Card,
   CardContent,
   Grid,
+  CircularProgress,
+  Alert,
   IconButton,
+  CardActionArea,
+  CardMedia,
 } from '@mui/material';
+import { api } from '../services/api';
 
-interface NewsArticle {
+type NewsArticle = {
+  _id: string;
   title: string;
   description: string;
-  url: string;
-  urlToImage: string;
-  publishedAt: string;
-  author?: string;
-  source: { id: string | null; name: string };
-}
-
+};
 
 const PolicyNews: React.FC = () => {
-  const [news, setArticles] = useState<NewsArticle[]>([]);
+  const [articles, setArticles] = useState<Article[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [prevIndex, setPrevIndex] = useState(0);
   const [animating, setAnimating] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [errMsg, setErrMsg] = useState<string | null>(null);
 
-  const goToSlide = React.useCallback((index: number) => {
+  const goToSlide = useCallback((index: number) => {
     if (index === activeIndex) return;
     setPrevIndex(activeIndex);
     setAnimating(true);
@@ -38,55 +39,76 @@ const PolicyNews: React.FC = () => {
   }, [activeIndex]);
 
   useEffect(() => {
-    axios.get<NewsArticle[]>('/api/articles')
-    .then(response => setArticles(response.data))
-    .catch(error => console.error('Error fetching news:', error));;
+    axios.get<NewsArticle[]>('/server/scripts/articles.json')
+      .then(response => {
+        setArticles(response.data);
+      })
+      .catch(error => {
+        console.error('Error fetching news:', error);
+      });
   }, []);
 
   useEffect(() => {
-    if (news.length === 0) return;
+    if (articles.length === 0) return;
     const interval = setInterval(() => {
-      goToSlide((activeIndex + 1) % news.length);
-    }, 5000);
+      goToSlide((activeIndex + 1) % articles.length);
+    }, 6000);
     return () => clearInterval(interval);
-  }, [activeIndex, goToSlide, news]);
+  }, [activeIndex, goToSlide, articles]);
 
-  if (news.length === 0) {
-    return null;
+  if (loading) {
+    return (
+      <Box sx={{ minHeight: '40vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <CircularProgress />
+      </Box>
+    );
   }
+  if (errMsg) {
+    return (
+      <Container sx={{ py: 4 }}>
+        <Alert severity="error">{errMsg}</Alert>
+      </Container>
+    );
+  }
+  if (articles.length === 0) return null;
 
-  const isForward = activeIndex === (prevIndex + 1) % news.length;
+  const isForward = activeIndex === (prevIndex + 1) % articles.length;
+  const featured = articles[activeIndex];
 
   return (
-    <Box
-      sx={{
-        bgcolor: '#f3f7f3',
-        minHeight: '100vh',
-        display: 'flex',
-        flexDirection: 'column',
-      }}
-    >
-      <Container maxWidth="lg" sx={{ flexGrow: 1, py: 4 }}>
-        {/* Headline Carousel */}
-        <Box
+    <Box sx={{ bgcolor: '#fafafa', minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+      <Container maxWidth="lg" sx={{ flexGrow: 1, py: { xs: 2, md: 4 } }}>
+        {/* Featured Headline Carousel */}
+        <Card
           sx={{
-            bgcolor: '#e0e0e0',
-            p: 5,
-            mb: 4,
-            borderRadius: 2,
-            minHeight: 220,
+            mb: 5,
+            borderRadius: 3,
+            boxShadow: 3,
             position: 'relative',
             overflow: 'hidden',
+            cursor: 'pointer',
+            minHeight: { xs: 260, md: 320 },
           }}
+          onClick={() => featured.url && window.open(featured.url, '_blank')}
         >
-          <Box
+          {featured.urlToImage && (
+            <CardMedia
+              component="img"
+              src={featured.urlToImage}
+              alt={featured.title}
+              sx={{ height: { xs: 180, md: 240 }, objectFit: 'cover' }}
+            />
+          )}
+          <CardContent
             key={activeIndex}
             sx={{
               position: 'absolute',
-              width: '100%',
-              top: 0,
+              bottom: 0,
               left: 0,
-              p: 5,
+              width: '100%',
+              bgcolor: 'rgba(0,0,0,0.55)',
+              color: '#fff',
+              p: 3,
               transform: animating
                 ? `translateX(${isForward ? '100%' : '-100%'})`
                 : 'translateX(0%)',
@@ -95,13 +117,17 @@ const PolicyNews: React.FC = () => {
                 : 'none',
             }}
           >
-            <Typography variant="h4" fontWeight="bold">
-              Featured Article: {news[activeIndex].title}
+            <Typography variant="overline">
+              {(featured.source ? String(featured.source) : '')}
+              {featured.source ? ' • ' : ''}{featured.publishedAtDisplay ?? ''}
             </Typography>
-            <Typography variant="body1" mt={2}>
-              {news[activeIndex].description}
+            <Typography variant="h5" fontWeight="bold">
+              {featured.title}
             </Typography>
-          </Box>
+            <Typography variant="body2" mt={1} sx={{ display: { xs: 'none', sm: '-webkit-box' }, WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+              {featured.description}
+            </Typography>
+          </CardContent>
 
           {/* Dot Navigation */}
           <Box
@@ -114,32 +140,31 @@ const PolicyNews: React.FC = () => {
               gap: 1,
             }}
           >
-            {news.map((_, i) => (
+            {articles.map((_, i) => (
               <IconButton
                 key={i}
-                onClick={() => goToSlide(i)}
+                size="small"
+                onClick={(e) => { e.stopPropagation(); goToSlide(i); }}
                 sx={{
-                  width: 12,
-                  height: 12,
+                  width: 10,
+                  height: 10,
                   borderRadius: '50%',
-                  backgroundColor: i === activeIndex ? '#333' : '#bbb',
-                  transition: 'background-color 0.3s',
-                  '&:hover': {
-                    backgroundColor: '#777',
-                  },
+                  backgroundColor: i === activeIndex ? '#fff' : 'rgba(255,255,255,0.6)',
+                  border: '1px solid #ddd',
+                  '&:hover': { backgroundColor: '#ccc' },
                 }}
               />
             ))}
           </Box>
-        </Box>
+        </Card>
 
-        {/* News Grid */}
+        {/* Grid of more articles */}
         <Grid container spacing={3}>
           {news.slice(1).map((news) => (
-            <Grid item xs={12} sm={6} md={4} key={news.title}>
+            <Grid item xs={12} sm={6} md={4} key={news._id}>
               <Card
                 sx={{
-                  height: 220,
+                  height: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'center',
@@ -147,9 +172,6 @@ const PolicyNews: React.FC = () => {
                 }}
               >
                 <CardContent>
-                  <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                    {news.source?.name}
-                  </Typography>
                   <Typography variant="h6" fontWeight="bold" gutterBottom>
                     {news.title}
                   </Typography>
@@ -164,18 +186,16 @@ const PolicyNews: React.FC = () => {
       </Container>
 
       {/* Slide Animations */}
-      <style>
-        {`
-          @keyframes slideInFromRight {
-            from { transform: translateX(100%); opacity: 0; }
-            to { transform: translateX(0%); opacity: 1; }
-          }
-          @keyframes slideInFromLeft {
-            from { transform: translateX(-100%); opacity: 0; }
-            to { transform: translateX(0%); opacity: 1; }
-          }
-        `}
-      </style>
+      <style>{`
+        @keyframes slideInFromRight {
+          from { transform: translateX(100%); opacity: 0; }
+          to { transform: translateX(0%); opacity: 1; }
+        }
+        @keyframes slideInFromLeft {
+          from { transform: translateX(-100%); opacity: 0; }
+          to { transform: translateX(0%); opacity: 1; }
+        }
+      `}</style>
     </Box>
   );
 };

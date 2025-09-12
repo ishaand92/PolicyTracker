@@ -16,17 +16,27 @@ const formatDisplayDate = (d?: Date) => {
   const year = d.getUTCFullYear();
   return `${day}/${month}/${year}`;
 };
+// controllers/articleController.ts
+const toSafeString = (v: any) => {
+  if (!v) return null;
+  if (typeof v === 'string') return v;
+  if (typeof v === 'object') return v.name ?? v.id ?? null;
+  return String(v);
+};
+
 const toDTO = (doc: any) => {
   const published = toDate(doc.publishedAt) ?? toDate(doc.publishedDate);
+  const sourceStr = toSafeString(doc.source);
+
   return {
     _id: String(doc._id),
     title: doc.title,
     description: doc.description,
     content: doc.content,
-    author: doc.author,
-    source: doc.source,
+    author: toSafeString(doc.author),       // author can also be object sometimes
+    source: sourceStr,                      // <-- normalized
     url: doc.url,
-    urlToImage: doc.urlToImage,
+    urlToImage: typeof doc.urlToImage === 'string' ? doc.urlToImage : null,
     publishedAt: published ?? null,
     publishedAtDisplay: formatDisplayDate(published),
     relevance: doc.relevance ?? 1,
@@ -36,6 +46,7 @@ const toDTO = (doc: any) => {
     updatedAt: doc.updatedAt ?? null,
   };
 };
+
 
 // GET /api/news  — start with no filter to verify data returns
 export const getAllArticles = async (req: Request, res: Response) => {
