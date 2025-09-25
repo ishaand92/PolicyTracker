@@ -25,7 +25,7 @@ const Header: React.FC = () => {
       position="static"
       elevation={0}
       sx={{
-        backgroundColor: '#ffffff',
+        background: 'linear-gradient(to right, #ffffff, #c8e6c9)', // white → green
         borderBottom: '1px solid #ddd',
         color: '#333',
         px: 2,
@@ -33,7 +33,12 @@ const Header: React.FC = () => {
     >
       <Toolbar sx={{ justifyContent: 'space-between' }}>
         {/* Brand with Icon */}
-        <Box display="flex" alignItems="center" onClick={() => navigate('/')} sx={{ cursor: 'pointer' }}>
+        <Box
+          display="flex"
+          alignItems="center"
+          onClick={() => navigate('/')}
+          sx={{ cursor: 'pointer' }}
+        >
           <img
             src="/icon.png"
             alt="Policy Tracker Icon"
