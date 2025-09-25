@@ -1,23 +1,32 @@
-import mongoose from 'mongoose';
-import dotenv from 'dotenv';
+// src/db/db.ts
+import mongoose from "mongoose";
 
-// Load environment variables
-dotenv.config({ path: './.env' });
-
-// MongoDB URI from .env
-const mongoURI = process.env.MONGO_URI;
-
-if (!mongoURI) {
-  throw new Error('MONGO_URI is not defined. Check your .env file.');
-}
-
-// Function to connect to MongoDB
 export const connectDB = async (): Promise<void> => {
+  const uri = process.env.MONGO_URI;
+  if (!uri) throw new Error("MONGO_URI is not defined");
+
+  mongoose.set("strictQuery", true);
+
+  await mongoose.connect(uri);
+
+  // ✅ Now it's safe to inspect the connection
+  const conn = mongoose.connection;
+  const db = conn.db;
+  if (!db) {
+    console.warn("⚠️ Mongoose connected but db handle not ready yet.");
+    return;
+  }
+
   try {
-    await mongoose.connect(mongoURI);
-    console.log('Connected to MongoDB successfully!');
-  } catch (error) {
-    console.error('MongoDB connection error:', error);
-    throw error;
+    const collections = (await db.listCollections().toArray()).map((c) => c.name).sort();
+    // conn.host is not typed; guard with optional chaining + fallback
+    const host = (conn as any).host ?? "unknown-host";
+
+    console.log("✅ Connected to MongoDB");
+    console.log("   host:", host);
+    console.log("   db  :", db.databaseName);
+    console.log("   colls:", collections.join(", ") || "(none)");
+  } catch (e: any) {
+    console.warn("⚠️ Connected, but failed to list collections:", e.message);
   }
 };

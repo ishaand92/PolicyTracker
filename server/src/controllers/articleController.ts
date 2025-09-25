@@ -96,3 +96,4 @@ export const getArticleById = async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message || "Failed to fetch article" });
   }
 };
+
