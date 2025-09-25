@@ -30,9 +30,9 @@ app.get("/home", (_req, res) => {
 app.get("*", (_req, res) => {
   res.sendFile(path.join(__dirname, "../../client/build/index.html"));
 });
-app.get("/api/articles", (req, res) => {
-  res.sendFile(path.join(__dirname, "scripts", "articles.json"));
-});
+// app.get("/api/articles", (req, res) => {
+//   res.sendFile(path.join(__dirname, "scripts", "articles.json"));
+// });
 
 connectDB()
   .then(() => {
