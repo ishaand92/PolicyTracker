@@ -7,7 +7,10 @@ export const connectDB = async (): Promise<void> => {
 
   mongoose.set("strictQuery", true);
 
-  await mongoose.connect(uri);
+  // 🚀 Force the dbName to "PolicyTracker"
+  await mongoose.connect(uri, {
+    dbName: "PolicyTracker",
+  });
 
   // ✅ Now it's safe to inspect the connection
   const conn = mongoose.connection;
@@ -18,13 +21,16 @@ export const connectDB = async (): Promise<void> => {
   }
 
   try {
-    const collections = (await db.listCollections().toArray()).map((c) => c.name).sort();
+    const collections = (await db.listCollections().toArray())
+      .map((c) => c.name)
+      .sort();
+
     // conn.host is not typed; guard with optional chaining + fallback
     const host = (conn as any).host ?? "unknown-host";
 
     console.log("✅ Connected to MongoDB");
     console.log("   host:", host);
-    console.log("   db  :", db.databaseName);
+    console.log("   db  :", db.databaseName); // should always be "PolicyTracker"
     console.log("   colls:", collections.join(", ") || "(none)");
   } catch (e: any) {
     console.warn("⚠️ Connected, but failed to list collections:", e.message);
