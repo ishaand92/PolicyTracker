@@ -8,6 +8,9 @@ import {
   Grid,
   CircularProgress,
   Alert,
+  Paper,
+  Button,
+
   IconButton,
   CardActionArea,
   CardMedia,
@@ -51,53 +54,44 @@ const PolicyNews: React.FC = () => {
     }, 500);
   }, [activeIndex]);
 
+  // 👉 extract your fetch logic so we can reuse it for Reload
+  const fetchArticles = useCallback(async () => {
+    setLoading(true);
+    setErrMsg(null);
+    try {
+      const res = await api.get<ApiResponse>('/articles', { params: { page: 1, limit: 25 } });
+      const items = (res.data?.items ?? []).map((d: any): Article => {
+        const source = typeof d.source === 'string' ? d.source : d?.source?.name ?? d?.source?.id ?? '';
+        return {
+          _id: String(d._id),
+          title: d.title ?? '(untitled)',
+          description: d.description ?? '',
+          url: d.url ?? '',
+          urlToImage: typeof d.urlToImage === 'string' ? d.urlToImage : null,
+          publishedAt: d.publishedAt ?? null,
+          publishedAtDisplay: d.publishedAtDisplay ?? '',
+          source,
+        };
+      });
+      setArticles(items);
+      setActiveIndex(0);
+      setPrevIndex(0);
+    } catch (e: any) {
+      const detail = e?.response ? `${e.response.status} ${e.response.statusText}` : e?.message || 'Network error';
+      setErrMsg(`Failed to fetch articles: ${detail}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
     let cancelled = false;
-
     (async () => {
-      setLoading(true);
-      try {
-        const res = await api.get<ApiResponse>('/articles', {
-          params: { page: 1, limit: 25 },
-        });
-
-        if (cancelled) return;
-
-        const items = (res.data?.items ?? []).map((d: any) => {
-          const source =
-            typeof d.source === 'string'
-              ? d.source
-              : d?.source?.name ?? d?.source?.id ?? '';
-
-          return {
-            _id: String(d._id),
-            title: d.title ?? '(untitled)',
-            description: d.description ?? '',
-            url: d.url ?? '',
-            urlToImage: typeof d.urlToImage === 'string' ? d.urlToImage : undefined,
-            publishedAt: d.publishedAt ?? null,
-            publishedAtDisplay: d.publishedAtDisplay ?? '',
-            source,
-          } as Article;
-        });
-
-        setArticles(items);
-        setActiveIndex(0);
-        setPrevIndex(0);
-      } catch (e: any) {
-        if (!cancelled) {
-          const detail = e?.response
-            ? `${e.response.status} ${e.response.statusText}`
-            : e?.message || 'Network error';
-          setErrMsg(`Failed to fetch articles: ${detail}`);
-        }
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
+      await fetchArticles();
+      if (cancelled) return;
     })();
-
     return () => { cancelled = true; };
-  }, []);
+  }, [fetchArticles]);
 
   useEffect(() => {
     if (articles.length === 0) return;
@@ -117,11 +111,31 @@ const PolicyNews: React.FC = () => {
   if (errMsg) {
     return (
       <Container sx={{ py: 4 }}>
-        <Alert severity="error">{errMsg}</Alert>
+        <Alert
+          severity="error"
+          action={<Button color="inherit" size="small" onClick={() => { void fetchArticles(); }}>Retry</Button>}
+        >
+          {errMsg}
+        </Alert>
       </Container>
     );
   }
-  if (articles.length === 0) return null;
+
+  if (articles.length === 0) {
+    return (
+      <Container sx={{ py: 6 }}>
+        <Paper variant="outlined" sx={{ p: 4, textAlign: 'center' }}>
+          <Typography variant="h6" fontWeight={700}>No articles available</Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            We couldn’t find any news items right now. Try again later or reload.
+          </Typography>
+          <Button sx={{ mt: 2 }} variant="contained" onClick={() => { void fetchArticles(); }}>
+            Reload
+          </Button>
+        </Paper>
+      </Container>
+    );
+  }
 
   const isForward = activeIndex === (prevIndex + 1) % articles.length;
   const featured = articles[activeIndex];
